@@ -2,3 +2,4 @@ open3d
 ipykernel
 numpy
 matplotlib
+scipy
