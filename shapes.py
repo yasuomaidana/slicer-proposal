@@ -53,3 +53,7 @@ class RawShape:
 
     def to_point_list(self) -> np.ndarray:
         return np.array([[i, j] for i, j in zip(self.x, self.y)])
+
+    def close(self):
+        self.x = np.append(self.x, self.x[0])
+        self.y = np.append(self.y, self.y[0])
