@@ -1,10 +1,27 @@
 import numpy as np
+import meshlib.mrmeshpy as mr
+from meshlib.mrmeshpy import SubdivideSettings, Mesh
+import meshlib.mrmeshnumpy as mrn
 
 
-def line_from_points(xs: tuple[np.ndarray, np.ndarray], ys: tuple[np.ndarray, np.ndarray]) -> 'RawShape':
-    x1, x2 = xs[0][1], xs[1][1]
-    y1, y2 = ys[0][1], ys[1][1]
+def line_from_points(xs: tuple[float, float], ys: tuple[float, float]) -> 'RawShape':
+    x1, x2 = xs
+    y1, y2 = ys
     return RawShape(np.array([x1, x2]), np.array([y1, y2]))
+
+
+def shape_from_points(xs: tuple[float], ys: tuple[float]) -> 'RawShape':
+    xys = iter(zip(xs, ys))
+    x_prev, y_prev = next(xys)
+    shape: [RawShape | None] = None
+    while xy := next(xys, None):
+        xi, yi = xy
+        shape_i = RawShape(np.array((x_prev, xi)), np.array((y_prev, yi)))
+        shape = shape_i if not shape else shape_i + shape
+        x_prev, y_prev = next(xys, (None, None))
+        if x_prev is None:
+            shape.close()
+            return shape
 
 
 def generate_from_arc_line(theta: float, m: float, length: float, thetas: np.ndarray, r: float) -> 'RawShape':
@@ -57,3 +74,20 @@ class RawShape:
     def close(self):
         self.x = np.append(self.x, self.x[0])
         self.y = np.append(self.y, self.y[0])
+
+    def generate_mesh(self, sub_set: [SubdivideSettings | dict] = None) -> Mesh:
+
+        points = self.to_point_list()
+        polyline2 = mrn.polyline2FromPoints(points)
+
+        mesh = mr.triangulateContours(polyline2.contours2(None))
+        if sub_set is None:
+            sub_set = SubdivideSettings()
+            sub_set.__setattr__("maxEdgeSplits", 20)
+        elif isinstance(sub_set, dict):
+            temp = SubdivideSettings()
+            for name, val in sub_set.items():
+                temp.__setattr__(name, val)
+            sub_set = temp
+        mr.subdivideMesh(mesh, sub_set)
+        return mesh
