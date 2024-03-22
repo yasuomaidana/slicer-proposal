@@ -2,3 +2,4 @@
 .idea/*
 .idea
 *.obj
+__pycache__**
